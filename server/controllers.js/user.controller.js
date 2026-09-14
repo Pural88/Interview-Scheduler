@@ -4,6 +4,18 @@ import { Apiresponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadFile } from "../services/storage.services.js";
 
+// Client (Vercel) and server (Render) are on different domains in
+// production, so the auth cookies need sameSite: "none" (which itself
+// requires secure: true) to survive a cross-site XHR. In local dev the
+// client isn't served over HTTPS, so "secure" cookies would be dropped
+// entirely — use the classic same-site-friendly Lax/insecure pair there.
+const isProduction = process.env.NODE_ENV === "production";
+const authCookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+};
+
 const generateAccessAndRefreshToken = (async (userId) => {
     try {
         const user = await User.findById(userId).select("-password");
@@ -68,14 +80,9 @@ const registerUser = asyncHandler(async (req, res) => {
         // login so the client can store the token and redirect.
         const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
 
-        const options = {
-            httpOnly: true,
-            secure: true
-        }
-
         res.status(201)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", refreshToken, options)
+            .cookie("accessToken", accessToken, authCookieOptions)
+            .cookie("refreshToken", refreshToken, authCookieOptions)
             .json(
                 new Apiresponse(
                     201,
@@ -128,15 +135,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
         const {refreshToken, accessToken} = await generateAccessAndRefreshToken(user._id);
 
-        const options = {
-            httpOnly: true,
-            secure: true
-        }
-
         const loggedInUser = await User.findById(user._id).select("-password");
         res
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", refreshToken, options)
+            .cookie("accessToken", accessToken, authCookieOptions)
+            .cookie("refreshToken", refreshToken, authCookieOptions)
 
         res
             .status(200)
@@ -148,8 +150,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async (req, res) => {
     res.status(200)
-    .clearCookie("accessToken")
-    .clearCookie("refreshToken")
+    .clearCookie("accessToken", authCookieOptions)
+    .clearCookie("refreshToken", authCookieOptions)
     .json(new Apiresponse(200, {}, "User Logout Successfully"))
 
 })

@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: interview-scheduling-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render sets PORT itself; the app already falls back to it.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      # Set this to your deployed Vercel URL (e.g. https://your-app.vercel.app)
+      - key: FRONTEND_URL
+        sync: false
