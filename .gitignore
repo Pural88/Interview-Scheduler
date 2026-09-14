@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+**/node_modules/
+/.pnp
+**/.pnp
+.pnp.*
+.yarn/*
+**/.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Environment variables
+.env
+**/.env
+.env.local
+**/.env.local
+.env.*.local
+**/.env.*.local
+
+# Keep these env files
+!.env.sample
+!**/.env.sample
+!.env.example
+!**/.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+*.log
