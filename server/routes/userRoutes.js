@@ -37,10 +37,24 @@ router.put("/me", authMiddleware, async (req, res) => {
     if (name !== undefined) updates.name = name;
     if (bio !== undefined) updates.bio = bio;
     if (topics !== undefined) updates.topics = topics;
-    if (phone !== undefined) updates.phone = phone;
+    if (phone !== undefined) {
+      const PHONE_REGEX = /^[1-9]\d{9}$/;
+      if (!PHONE_REGEX.test(phone.toString().trim())) {
+        return res
+          .status(400)
+          .json(new ApiError(400, "Enter a valid 10-digit phone number (it cannot start with 0)"));
+      }
+      updates.phone = phone;
+    }
     if (roles !== undefined) {
       const allowedRoles = ["interviewer", "interviewee"];
-      updates.roles = (roles || []).filter((r) => allowedRoles.includes(r));
+      const filteredRoles = (roles || []).filter((r) => allowedRoles.includes(r));
+      if (filteredRoles.length !== 1) {
+        return res
+          .status(400)
+          .json(new ApiError(400, "Choose exactly one role: interviewer or interviewee"));
+      }
+      updates.roles = filteredRoles;
     }
 
     const user = await User.findByIdAndUpdate(req.user.id, updates, {

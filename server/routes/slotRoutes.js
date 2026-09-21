@@ -20,7 +20,7 @@ router.get("/available", async (req, res) => {
     // does not depend solely on the periodic timer.
     await purgeExpiredSlots();
 
-    const { date, topic } = req.query;
+    const { date, topic, interviewer } = req.query;
     const filter = {
       isAvailable: true,
       ...buildActiveSlotQuery(),
@@ -34,6 +34,7 @@ router.get("/available", async (req, res) => {
     }
 
     if (topic) filter.topic = topic;
+    if (interviewer) filter.interviewer = interviewer;
 
     const slots = await Slot.find(filter)
       .populate("interviewer", "-password")

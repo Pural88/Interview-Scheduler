@@ -21,11 +21,10 @@ export const Register = () => {
     phone: "",
     bio: "",
   });
-  const [roles, setRoles] = useState(["interviewee"]);
+  const [role, setRole] = useState("interviewee");
   const [topics, setTopics] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const { register, user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -38,10 +37,9 @@ export const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const toggleRole = (role) => {
-    setRoles((prev) =>
-      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
-    );
+  const handlePhoneChange = (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setFormData({ ...formData, phone: digitsOnly });
   };
 
   const toggleTopic = (topic) => {
@@ -49,6 +47,8 @@ export const Register = () => {
       prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic],
     );
   };
+
+  const PHONE_REGEX = /^[1-9]\d{9}$/;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,13 +59,15 @@ export const Register = () => {
       return;
     }
 
-    if (roles.length === 0) {
-      setError("Choose at least one role: interviewer or interviewee");
+    if (!PHONE_REGEX.test(formData.phone.trim())) {
+      setError(
+        "Enter a valid 10-digit phone number (it cannot start with 0)",
+      );
       return;
     }
 
-    if (!acceptedTerms) {
-      setError("You must accept the Terms & Conditions to register");
+    if (!role) {
+      setError("Choose a role: interviewer or interviewee");
       return;
     }
 
@@ -73,7 +75,7 @@ export const Register = () => {
 
     try {
       const { confirmPassword, ...rest } = formData;
-      await register({ ...rest, roles, topics, acceptedTerms });
+      await register({ ...rest, roles: [role], topics });
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
@@ -143,13 +145,17 @@ export const Register = () => {
           </div>
 
           <div className="form-group">
-            <label>Phone (optional)</label>
+            <label>Phone</label>
             <input
               type="tel"
               name="phone"
               value={formData.phone}
-              onChange={handleChange}
-              placeholder="+91 98765 43210"
+              onChange={handlePhoneChange}
+              required
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={10}
+              placeholder="9876543210"
             />
           </div>
 
@@ -182,17 +188,19 @@ export const Register = () => {
             <div className="checkbox-row">
               <label className="checkbox-pill">
                 <input
-                  type="checkbox"
-                  checked={roles.includes("interviewee")}
-                  onChange={() => toggleRole("interviewee")}
+                  type="radio"
+                  name="role"
+                  checked={role === "interviewee"}
+                  onChange={() => setRole("interviewee")}
                 />
                 Interviewee (practice being interviewed)
               </label>
               <label className="checkbox-pill">
                 <input
-                  type="checkbox"
-                  checked={roles.includes("interviewer")}
-                  onChange={() => toggleRole("interviewer")}
+                  type="radio"
+                  name="role"
+                  checked={role === "interviewer"}
+                  onChange={() => setRole("interviewer")}
                 />
                 Interviewer (practice interviewing others)
               </label>
@@ -224,17 +232,6 @@ export const Register = () => {
               rows={3}
               placeholder="A sentence or two about your background"
             />
-          </div>
-
-          <div className="form-group">
-            <label className="checkbox-pill">
-              <input
-                type="checkbox"
-                checked={acceptedTerms}
-                onChange={(e) => setAcceptedTerms(e.target.checked)}
-              />
-              I accept the Terms & Conditions
-            </label>
           </div>
 
           <button

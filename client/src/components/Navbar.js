@@ -21,6 +21,7 @@ export const Navbar = () => {
   };
 
   const isInterviewer = user?.roles?.includes("interviewer");
+  const isInterviewee = user?.roles?.includes("interviewee");
 
   return (
     <nav className="navbar">
@@ -38,11 +39,13 @@ export const Navbar = () => {
                   Dashboard
                 </NavLink>
               </li>
-              <li>
-                <NavLink to="/find-slots" className={navLinkClass}>
-                  Find Slots
-                </NavLink>
-              </li>
+              {isInterviewee && (
+                <li>
+                  <NavLink to="/find-slots" className={navLinkClass}>
+                    Find Slots
+                  </NavLink>
+                </li>
+              )}
               {isInterviewer && (
                 <li>
                   <NavLink to="/manage-slots" className={navLinkClass}>

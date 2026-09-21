@@ -11,6 +11,15 @@ const RUBRIC_FIELDS = [
   { key: "technicalDepth", label: "Technical Depth" },
 ];
 
+const TOPIC_OPTIONS = [
+  "DSA",
+  "System Design",
+  "Behavioral",
+  "Frontend",
+  "Backend",
+  "Other",
+];
+
 const averageOf = (feedback, key) => {
   if (feedback.length === 0) return 0;
   const sum = feedback.reduce((acc, f) => acc + (f.ratings?.[key] || 0), 0);
@@ -24,6 +33,9 @@ export const UserProfile = () => {
   const [feedback, setFeedback] = useState([]);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", bio: "", topics: [] });
 
   const isOwnProfile = String(currentUser?.id) === String(id);
 
@@ -40,6 +52,42 @@ export const UserProfile = () => {
   };
 
   useEffect(load, [id]);
+
+  const startEditing = () => {
+    setEditForm({
+      name: profile.name || "",
+      bio: profile.bio || "",
+      topics: profile.topics || [],
+    });
+    setEditing(true);
+  };
+
+  const cancelEditing = () => setEditing(false);
+
+  const toggleEditTopic = (topic) => {
+    setEditForm((prev) => ({
+      ...prev,
+      topics: prev.topics.includes(topic)
+        ? prev.topics.filter((t) => t !== topic)
+        : [...prev.topics, topic],
+    }));
+  };
+
+  const saveProfile = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const res = await usersAPI.updateMyProfile(editForm);
+      setUser((prev) => ({ ...prev, name: res.data.name }));
+      setEditing(false);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
@@ -90,8 +138,11 @@ export const UserProfile = () => {
               ))}
             </div>
           )}
-          {isOwnProfile && (
-            <div style={{ marginTop: "14px" }}>
+          {isOwnProfile && !editing && (
+            <div style={{ marginTop: "14px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <button type="button" className="btn btn-outline" onClick={startEditing}>
+                Edit Profile
+              </button>
               <label className="btn btn-outline" style={{ cursor: "pointer" }}>
                 {uploading ? "Uploading..." : "Change Profile Picture"}
                 <input
@@ -106,6 +157,59 @@ export const UserProfile = () => {
           )}
         </div>
       </div>
+
+      {isOwnProfile && editing && (
+        <form onSubmit={saveProfile} className="card" style={{ marginBottom: "24px" }}>
+          <h2 style={{ marginBottom: "16px" }}>Edit Profile</h2>
+
+          {error && <div className="alert alert-error">{error}</div>}
+
+          <div className="form-group">
+            <label>Full Name</label>
+            <input
+              type="text"
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Short bio</label>
+            <textarea
+              value={editForm.bio}
+              onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+              rows={3}
+              placeholder="A sentence or two about your background"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Topics you're comfortable with</label>
+            <div className="checkbox-row">
+              {TOPIC_OPTIONS.map((topic) => (
+                <label key={topic} className="checkbox-pill">
+                  <input
+                    type="checkbox"
+                    checked={editForm.topics.includes(topic)}
+                    onChange={() => toggleEditTopic(topic)}
+                  />
+                  {topic}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+            <button type="button" className="btn btn-outline" onClick={cancelEditing} disabled={saving}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       <h2 style={{ marginBottom: "10px" }}>Feedback Received</h2>
       {feedback.length === 0 ? (

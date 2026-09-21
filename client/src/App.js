@@ -76,6 +76,21 @@ const InterviewerRoute = ({ children }) => {
   return children;
 };
 
+// Find Slots is interviewee-only; interviewers manage slots instead of booking them.
+const IntervieweeRoute = ({ children }) => {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user || !user.roles?.includes("interviewee")) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -100,7 +115,9 @@ function App() {
             path="/find-slots"
             element={
               <ProtectedRoute>
-                <FindSlots />
+                <IntervieweeRoute>
+                  <FindSlots />
+                </IntervieweeRoute>
               </ProtectedRoute>
             }
           />

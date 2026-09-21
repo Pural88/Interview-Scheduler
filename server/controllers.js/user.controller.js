@@ -33,24 +33,28 @@ const registerUser = asyncHandler(async (req, res) => {
     try {
         const {
             name, email, password, phone, roles, bio, topics,
-            acceptedTerms,
         } = req.body || {};
 
-        if ([name, email, password].some((field) => !field || field?.trim() === "")) {
-            throw new ApiError(400, "Name, email and password are required")
+        if ([name, email, password, phone].some((field) => !field || field?.toString().trim() === "")) {
+            throw new ApiError(400, "Name, email, password and phone are required")
         }
 
-        // Only these roles may be self-assigned at signup, and at least one
-        // is required. Anyone can be an interviewer or interviewee — there
-        // is no gatekeeping, unlike SmashSlot's host role.
+        // 10 digits, no leading zero.
+        const PHONE_REGEX = /^[1-9]\d{9}$/;
+        if (!PHONE_REGEX.test(phone.toString().trim())) {
+            throw new ApiError(400, "Enter a valid 10-digit phone number (it cannot start with 0)")
+        }
+
+        // A user is either an interviewer or an interviewee — exactly one
+        // role, self-assigned at signup. Anyone can be either — there is no
+        // gatekeeping, unlike SmashSlot's host role.
         const allowedRoles = ["interviewer", "interviewee"];
         const requestedRoles = Array.isArray(roles)
             ? roles.filter((r) => allowedRoles.includes(r))
             : [];
 
-        // Enforced server-side too — the checkbox alone is bypassable.
-        if (acceptedTerms !== true) {
-            throw new ApiError(400, "You must accept the Terms & Conditions to register")
+        if (requestedRoles.length !== 1) {
+            throw new ApiError(400, "Choose exactly one role: interviewer or interviewee")
         }
 
         const existingUser = await User.findOne({ email })
@@ -64,11 +68,9 @@ const registerUser = asyncHandler(async (req, res) => {
             email,
             password,
             phone,
-            roles: requestedRoles.length > 0 ? requestedRoles : ["interviewee"],
+            roles: requestedRoles,
             bio,
             topics: Array.isArray(topics) ? topics : [],
-            acceptedTerms: true,
-            acceptedTermsAt: new Date(),
         })
 
         const createdUser = await User.findById(user._id).select("-password")

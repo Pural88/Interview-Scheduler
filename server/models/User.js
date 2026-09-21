@@ -7,17 +7,23 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    phone: String, // +91
-    // A user can be an interviewer, an interviewee, or both — chosen
-    // per-action (creating a slot vs. booking one), not fixed at signup.
+    phone: {
+      type: String,
+      required: true,
+      // 10 digits, no leading zero.
+      match: [/^[1-9]\d{9}$/, "Phone number must be 10 digits and cannot start with 0"],
+    },
+    // A user is either an interviewer or an interviewee — exactly one role,
+    // chosen at signup.
     roles: {
       type: [String],
       enum: ["interviewer", "interviewee"],
       default: ["interviewee"],
+      validate: {
+        validator: (v) => Array.isArray(v) && v.length === 1,
+        message: "Choose exactly one role: interviewer or interviewee",
+      },
     },
-    // Record of the user accepting the terms at signup.
-    acceptedTerms: { type: Boolean, default: false },
-    acceptedTermsAt: Date,
     avatarUrl: String,
     bio: String,
     // Topics this user is comfortable interviewing/being interviewed on.

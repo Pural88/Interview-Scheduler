@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { slotsAPI, bookingsAPI } from "../services/api";
 import SlotCard from "../components/SlotCard";
@@ -8,8 +9,11 @@ const TOPICS = ["DSA", "System Design", "Behavioral", "Frontend", "Backend", "Ot
 
 export const FindSlots = () => {
   const { user } = useContext(AuthContext);
+  const [searchParams] = useSearchParams();
+  const interviewerId = searchParams.get("interviewer") || "";
+  const interviewerName = searchParams.get("interviewerName") || "";
   const [slots, setSlots] = useState([]);
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(searchParams.get("topic") || "");
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -18,7 +22,11 @@ export const FindSlots = () => {
   const fetchSlots = () => {
     setLoading(true);
     slotsAPI
-      .getAvailableSlots({ topic: topic || undefined, date: date || undefined })
+      .getAvailableSlots({
+        topic: topic || undefined,
+        date: date || undefined,
+        interviewer: interviewerId || undefined,
+      })
       .then((res) => setSlots(res.data || []))
       .catch((err) => setError(err.response?.data?.message || "Failed to load slots"))
       .finally(() => setLoading(false));
@@ -27,7 +35,7 @@ export const FindSlots = () => {
   useEffect(() => {
     fetchSlots();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, date]);
+  }, [topic, date, interviewerId]);
 
   const handleBook = (slot) => {
     showConfirm({
@@ -48,7 +56,14 @@ export const FindSlots = () => {
 
   return (
     <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "40px 20px" }}>
-      <h1 style={{ marginBottom: "20px" }}>Find a Slot</h1>
+      <h1 style={{ marginBottom: "8px" }}>Find a Slot</h1>
+      {interviewerId && (
+        <p style={{ color: "var(--light-text)", marginBottom: "20px" }}>
+          Showing open slots with{" "}
+          <strong style={{ color: "var(--text-color)" }}>{interviewerName || "this interviewer"}</strong>{" "}
+          only.
+        </p>
+      )}
 
       <div style={{ display: "flex", gap: "14px", marginBottom: "26px", flexWrap: "wrap" }}>
         <div className="form-group" style={{ minWidth: "200px" }}>
